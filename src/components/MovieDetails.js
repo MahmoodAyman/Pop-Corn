@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import StarRating from "./StarRating";
+import { useKey } from "./Custom/useKey";
 const KEY = "ad4b4032";
 export default function MovieDetails({
   selectedId,
@@ -11,25 +12,17 @@ export default function MovieDetails({
   const [isLoading, setIsLoading] = useState(false);
   const [userRating, setUserRating] = useState("");
   const [error, setError] = useState("");
-
+  const countRef = useRef(0);
+  useEffect(
+    function () {
+      if (userRating) countRef.current = countRef.current + 1;
+    },
+    [userRating]
+  );
   const isWatched = watched.map((movie) => movie.imdbID).includes(selectedId);
   const watchedUserRating = watched.find(
     (movie) => movie.imdbID === selectedId
   )?.userRating;
-
-  function handleAdd() {
-    const newWatchedMovie = {
-      imdbID: selectedId,
-      title,
-      year,
-      poster,
-      imdbRating: Number(imdbRating),
-      runtime: Number(runtime.split(" ")[0]),
-      userRating,
-    };
-    onAddWatched(newWatchedMovie);
-    onCloseMovie();
-  }
 
   const {
     Title: title,
@@ -43,21 +36,21 @@ export default function MovieDetails({
     Director: director,
     Genre: genre,
   } = movie;
-  useEffect(
-    function () {
-      function esc(e) {
-        if (e.code === "Escape") {
-          onCloseMovie();
-        }
-      }
-      document.addEventListener("keydown", esc);
-      // clean up eventlitener with unmount
-      return function () {
-        document.removeEventListener("keydown", esc);
-      };
-    },
-    [onCloseMovie]
-  );
+  function handleAdd() {
+    const newWatchedMovie = {
+      imdbID: selectedId,
+      title,
+      year,
+      poster,
+      imdbRating: Number(imdbRating),
+      runtime: Number(runtime.split(" ")[0]),
+      userRating,
+      countRatingDecisions: countRef.current,
+    };
+    onAddWatched(newWatchedMovie);
+    onCloseMovie();
+  }
+  useKey("Escape", onCloseMovie);
   useEffect(
     function () {
       setIsLoading(true);
@@ -66,9 +59,9 @@ export default function MovieDetails({
           const res = await fetch(
             `http://www.omdbapi.com/?apikey=${KEY}&i=${selectedId}`
           );
-          if (!res.ok) throw new Error("fuck");
+          if (!res.ok) throw new Error("Error loading Data");
           const data = await res.json();
-          if (data.Response === "False") throw new Error("fuck data");
+          if (data.Response === "False") throw new Error("Error loading Data");
           setMovie(data);
         } catch (error) {
           setError(error.message);
