@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import Box from "./Box";
 import WatchedSummary from "./WatchSummary";
 import Movie from "./Movie";
